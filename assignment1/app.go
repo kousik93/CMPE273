@@ -28,13 +28,11 @@ type Flight struct{
 	Seat string `json:"seat"`
 }
 
-		type Travel struct{
-			 Flight struct{
-				Seat string `json:"seat"`
-			}`json:"flight"`
-
-		}
-
+type Travel struct{
+		Flight struct{
+		Seat string `json:"seat"`
+	}`json:"flight"`
+}
 
 type User struct {
     Email string `json:"email"`
@@ -68,7 +66,7 @@ type User struct {
 		}`json:"travel"`
  }
 
-
+//Variables for interface{} asserrtion
 var Profiles = make(map[string]User)
 var random map[string]interface{}
 var music map[string]interface{}
@@ -77,9 +75,6 @@ var food map[string]interface{}
 var travel map[string]interface{}
 var flight map[string]interface{}
 var seat map[string]interface{}
-
-
-
 
 func GetProfile(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()
@@ -92,27 +87,22 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 		if prof.Email!="" {
 			w.Write([]byte(a))
 		}
-		// else
-		// {
-		// 	w.WriteHeader(http.StatusNoContent)
-		// 	w.Write([]byte(""))
-		// }
+		if prof.Email ==""{
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(""))
+		}
 }
 
 func PutProfile(w http.ResponseWriter, r *http.Request) {
-
 		params := r.URL.Query()
 		email := params.Get(":email")
 		prof:=Profiles[email]
 		if prof.Email !=""{
-			//log.Println(prof)
 			body, err := ioutil.ReadAll(r.Body)
 	 		if err != nil {
 			 	panic(err)
 	 		}
 			json.Unmarshal([]byte(body), &random)
-			log.Println(random)
-			log.Println(reflect.TypeOf(random))
 			for key, value := range random {
 
 				if key=="favorite_sport"{
@@ -150,7 +140,6 @@ func PutProfile(w http.ResponseWriter, r *http.Request) {
 					}
 				if key=="movie"{
 					moviea = value.(map[string]interface{})
-					log.Println(reflect.TypeOf(value))
 					for keya, valuea := range moviea {
 							switch vv := valuea.(type) {
 								case []interface{}:
@@ -203,19 +192,22 @@ func PutProfile(w http.ResponseWriter, r *http.Request) {
 							Profiles[email]=prof
 						}
 			}
+			w.WriteHeader(http.StatusNoContent)
+			w.Write([]byte(""))
 		}
-		log.Println(Profiles)
+		if prof.Email==""{
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(""))
+		}
 }
-func DelProfile(w http.ResponseWriter, r *http.Request) {
 
+func DelProfile(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	email := params.Get(":email")
 	delete(Profiles, email)
 	w.WriteHeader(http.StatusNoContent)
 	w.Write([]byte(""))
 }
-
-
 
 func PostProfile(rw http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
@@ -225,14 +217,9 @@ func PostProfile(rw http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	Profiles[prof.Email]=prof
-	log.Println(Profiles)
 	rw.WriteHeader(http.StatusCreated)
 	rw.Write([]byte(""))
 }
-
-
-
-
 
 func main() {
 			mux := routes.New()
@@ -241,7 +228,6 @@ func main() {
 			mux.Put("/profile/:email", PutProfile)
 			mux.Post("/profile",PostProfile)
 			http.Handle("/", mux)
-
-		 log.Println("Listening...")
-		 http.ListenAndServe(":3000", nil)
+		 	log.Println("Listening...")
+		 	http.ListenAndServe(":3000", nil)
 }
