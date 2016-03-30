@@ -115,10 +115,8 @@ def test_delete(url):
         print "You have deleted the item"
 
 
-url = "http://localhost:3000"
+url = "http://localhost:3002"
 test_post(url)
 test_get(url)
-test_delete(url)
 test_put(url)
-
-test_get(url)
+test_delete(url)

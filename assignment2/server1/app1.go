@@ -165,10 +165,9 @@ func (l *Listener) Postrpc(line []byte, ack *bool) error {
 }
 
 func (l *Listener) Putrpc(incoming []byte, ack *bool) error {
-	//extract email
+	//extract email, search and delete
 	bson.Unmarshal(incoming,&yo)
 	email:=yo["email"].(string)
-	//Search and delete email
 	var searchstr=`{"email" : "`+email+`"}`
 	res, _ := db.coll.Find(searchstr)
 	db.coll.Sync()
@@ -184,17 +183,33 @@ func (l *Listener) Putrpc(incoming []byte, ack *bool) error {
 	return nil
 }
 
+func (l *Listener) Delrpc(incoming []byte, ack *bool) error {
+	//extract email, search and delete
+	bson.Unmarshal(incoming,&yo)
+	email:=yo["email"].(string)
+	var searchstr=`{"email" : "`+email+`"}`
+	res, _ := db.coll.Find(searchstr)
+	db.coll.Sync()
+	db.coll.BeginTransaction()
+	bson.Unmarshal(res[0],&yo)
+	aa:=yo["_id"].(bson.ObjectId)
+	db.coll.RmBson(bson.ObjectId.Hex(aa))
+	db.coll.CommitTransaction()
+	db.coll.Sync()
+	showdb()
+	return nil
+}
+
 func sendtorpc(incoming []byte, method string){
-	log.Println(string(incoming))
-	log.Println(method)
 	var reply bool
-	//loop this
-		client, err := rpc.Dial("tcp", replica[i])
-		if err != nil {
-			log.Fatal(err)
-		}
+
+
 		if method=="post" {
 			for i:=0;i<len(replica);i++ {
+				client, err := rpc.Dial("tcp", replica[i])
+				if err != nil {
+					log.Fatal(err)
+				}
 				err = client.Call("Listener.Postrpc", incoming, &reply)
 				if err != nil {
 					log.Fatal(err)
@@ -203,13 +218,30 @@ func sendtorpc(incoming []byte, method string){
 		}
 		if method=="put" {
 			for i:=0;i<len(replica);i++ {
+				client, err := rpc.Dial("tcp", replica[i])
+				if err != nil {
+					log.Fatal(err)
+				}
 				err = client.Call("Listener.Putrpc", incoming, &reply)
 				if err != nil {
 					log.Fatal(err)
 				}
 			}
 		}
+		if method=="del" {
+			for i:=0;i<len(replica);i++ {
+				client, err := rpc.Dial("tcp", replica[i])
+				if err != nil {
+					log.Fatal(err)
+				}
+				err = client.Call("Listener.Delrpc", incoming, &reply)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
 }
+
 
 
 /*
@@ -380,6 +412,10 @@ func DelProfile(w http.ResponseWriter, r *http.Request) {
 	db.coll.RmBson(bson.ObjectId.Hex(aa))
 	db.coll.CommitTransaction()
 	db.coll.Sync()
+
+	//Write to rpc
+	bsrecput, _ := bson.Marshal(yo)
+	sendtorpc(bsrecput,"del")
 
 	log.Println("In Delete:")
 	showdb()
