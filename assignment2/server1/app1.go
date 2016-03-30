@@ -164,10 +164,19 @@ func (l *Listener) Postrpc(line []byte, ack *bool) error {
 	return nil
 }
 
-func (l *Listener) Putrpc(incoming []byte, idtodelete *bson.ObjectId) error {
+func (l *Listener) Putrpc(incoming []byte, ack *bool) error {
+	//extract email
+	bson.Unmarshal(incoming,&yo)
+	email:=yo["email"].(string)
+	//Search and delete email
+	var searchstr=`{"email" : "`+email+`"}`
+	res, _ := db.coll.Find(searchstr)
 	db.coll.Sync()
 	db.coll.BeginTransaction()
-	db.coll.RmBson(bson.ObjectId.Hex(*idtodelete))
+	bson.Unmarshal(res[0],&yo)
+	aa:=yo["_id"].(bson.ObjectId)
+	db.coll.RmBson(bson.ObjectId.Hex(aa))
+	//Insert new
 	db.coll.SaveBson(incoming)
 	db.coll.CommitTransaction()
 	db.coll.Sync()
@@ -175,29 +184,31 @@ func (l *Listener) Putrpc(incoming []byte, idtodelete *bson.ObjectId) error {
 	return nil
 }
 
-func sendtorpc(incoming []byte, method string, idtodelete bson.ObjectId){
+func sendtorpc(incoming []byte, method string){
 	log.Println(string(incoming))
 	log.Println(method)
 	var reply bool
 	//loop this
-	for i:=0;i<len(replica);i++ {
 		client, err := rpc.Dial("tcp", replica[i])
 		if err != nil {
 			log.Fatal(err)
 		}
 		if method=="post" {
-			err = client.Call("Listener.Postrpc", incoming, &reply)
-			if err != nil {
-				log.Fatal(err)
+			for i:=0;i<len(replica);i++ {
+				err = client.Call("Listener.Postrpc", incoming, &reply)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 		if method=="put" {
-			err = client.Call("Listener.Putrpc", incoming, &idtodelete)
-			if err != nil {
-				log.Fatal(err)
+			for i:=0;i<len(replica);i++ {
+				err = client.Call("Listener.Putrpc", incoming, &reply)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
-	}
 }
 
 
@@ -343,7 +354,7 @@ func PutProfile(w http.ResponseWriter, r *http.Request) {
 			db.coll.CommitTransaction()
 			db.coll.Sync()
 			//Write to RPC
-			//sendtorpc(bsrecput,"put",tmpid)
+			sendtorpc(bsrecput,"put")
 
 			//Write to HTTP out
 			w.WriteHeader(http.StatusNoContent)
@@ -399,9 +410,8 @@ func PostProfile(rw http.ResponseWriter, r *http.Request) {
 		showdb()
 
 		//Write to RPC
-		var dummy bson.ObjectId
 		a, _ := json.Marshal(prof)
-		sendtorpc([]byte(a),"post",dummy)
+		sendtorpc([]byte(a),"post")
 
 		//Wrtie to Http Out
 		rw.WriteHeader(http.StatusCreated)
