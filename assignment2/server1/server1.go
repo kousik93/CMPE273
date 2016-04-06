@@ -3,12 +3,11 @@ package main
 import (
 	"github.com/drone/routes"
 	"log"
-  "encoding/json"
+    "encoding/json"
 	"net/http"
 	"github.com/mkilling/goejdb"
 	"labix.org/v2/mgo/bson"
 	"os"
-	"reflect"
 	"io/ioutil"
 	"github.com/naoina/toml"
 	"strconv"
@@ -152,7 +151,7 @@ RPC functions
 
 func (l *Listener) Postrpc(line []byte, ack *bool) error {
 	var tmp2 User
-	log.Println(string(line))
+	log.Println("Incoming Post Request.")
 	json.Unmarshal(line, &tmp2)
 	bsrec, _ := bson.Marshal(tmp2)
 	db.coll.Sync()
@@ -160,12 +159,13 @@ func (l *Listener) Postrpc(line []byte, ack *bool) error {
 	db.coll.SaveBson(bsrec)
 	db.coll.CommitTransaction()
 	db.coll.Sync()
-	showdb()
+	log.Println("Post Request Commited.")
 	return nil
 }
 
 func (l *Listener) Putrpc(incoming []byte, ack *bool) error {
 	//extract email, search and delete
+	log.Println("Incoming Put Request.")
 	bson.Unmarshal(incoming,&yo)
 	email:=yo["email"].(string)
 	var searchstr=`{"email" : "`+email+`"}`
@@ -179,12 +179,13 @@ func (l *Listener) Putrpc(incoming []byte, ack *bool) error {
 	db.coll.SaveBson(incoming)
 	db.coll.CommitTransaction()
 	db.coll.Sync()
-	showdb()
+	log.Println("PUT Request Commited.")
 	return nil
 }
 
 func (l *Listener) Delrpc(incoming []byte, ack *bool) error {
 	//extract email, search and delete
+	log.Println("Incoming Delete Request.")
 	bson.Unmarshal(incoming,&yo)
 	email:=yo["email"].(string)
 	var searchstr=`{"email" : "`+email+`"}`
@@ -196,13 +197,12 @@ func (l *Listener) Delrpc(incoming []byte, ack *bool) error {
 	db.coll.RmBson(bson.ObjectId.Hex(aa))
 	db.coll.CommitTransaction()
 	db.coll.Sync()
-	showdb()
+	log.Println("Delete Request Commited.")
 	return nil
 }
 
 func sendtorpc(incoming []byte, method string){
 	var reply bool
-
 
 		if method=="post" {
 			for i:=0;i<len(replica);i++ {
@@ -274,8 +274,7 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(""))
 	}
-	log.Println("In Get:")
-	showdb()
+	log.Println("Get SuccessFull.")
 }
 
 func PutProfile(w http.ResponseWriter, r *http.Request) {
@@ -385,6 +384,8 @@ func PutProfile(w http.ResponseWriter, r *http.Request) {
 
 			db.coll.CommitTransaction()
 			db.coll.Sync()
+
+			log.Println("Put Successful. Probagating your request across servers.")
 			//Write to RPC
 			sendtorpc(bsrecput,"put")
 
@@ -417,8 +418,7 @@ func DelProfile(w http.ResponseWriter, r *http.Request) {
 	bsrecput, _ := bson.Marshal(yo)
 	sendtorpc(bsrecput,"del")
 
-	log.Println("In Delete:")
-	showdb()
+	log.Println("Delete Successful. Probagating your request across servers.")
 
 	w.WriteHeader(http.StatusNoContent)
 	w.Write([]byte(""))
@@ -442,8 +442,7 @@ func PostProfile(rw http.ResponseWriter, r *http.Request) {
 		db.coll.CommitTransaction()
 		db.coll.Sync()
 		log.Printf("\nSaved "+prof.Email)
-		log.Println("In POSt:")
-		showdb()
+		log.Println("Post Successful. Probagating your request across servers.")
 
 		//Write to RPC
 		a, _ := json.Marshal(prof)
@@ -459,7 +458,7 @@ func PostProfile(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//Function to just print the database
+//Helper function to just print the database
 func showdb(){
 	res, _ := db.coll.Find(``)
 	log.Printf("\n\nRecords found: %d\n", len(res))
@@ -477,17 +476,16 @@ func showdb(){
 }
 
 func rpcroutine(inbound *net.TCPListener){
-
 	for true {
 		rpc.Accept(inbound)
 	}
-
 }
 
 func main() {
 
 	//TOML CONFIG Begin
-			f, err := os.Open("app.toml")
+	 		arg := os.Args[1]
+			f, err := os.Open(arg)
 	    if err != nil {
 	        panic(err)
 	    }
@@ -517,7 +515,6 @@ func main() {
 			listener := new(Listener)
 			rpc.Register(listener)
 			log.Println("RPC has been set up: "+strconv.Itoa(rpcaccept))
-			log.Println(reflect.TypeOf(inbound))
 			go rpcroutine(inbound)
 		//RPC Config end
 
