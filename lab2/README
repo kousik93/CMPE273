@@ -4,6 +4,7 @@ I have used murmur for the hash function.
 
 server.go - Server file to store and retreive data.
 client.go - Client file that performs all the work
+testrun.png - A screenshot of the testrun that I did
 
 Running Server:
 
