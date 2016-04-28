@@ -1,0 +1,26 @@
+This is a client side Rendezvous hashing program. Rendezvous hasing is used for sharding database.
+
+I have used murmur for the hash function.
+
+server.go - Server file to store and retreive data.
+client.go - Client file that performs all the work
+testrun.png - A screenshot of the testrun that I did
+
+Running Server:
+
+go run server.go 4000-4007
+
+Running Client:
+
+go run client.go 4000-4007 "1->A,2->B,3->C,4->D,5->E,6->F,7->G,8->H"
+
+Test using curl:
+
+curl -X GET "http://localhost:4000/" &&
+curl -X GET "http://localhost:4001/" && 
+curl -X GET "http://localhost:4002/" && 
+curl -X GET "http://localhost:4003/" && 
+curl -X GET "http://localhost:4004/" && 
+curl -X GET "http://localhost:4005/" && 
+curl -X GET "http://localhost:4006/" && 
+curl -X GET "http://localhost:4007/" 
