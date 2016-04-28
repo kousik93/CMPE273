@@ -1,0 +1,14 @@
+This is a client side consistant hashing program. Consistant hasing is used for sharding database.
+
+I have used murmur for the hash function.
+
+server.go - Server file to store and retreive data.
+client.go - Client file that performs all the work
+
+Running Server:
+
+go run server.go 4000-4015
+
+Running Client:
+
+go run client.go 4000-4015 "1->A,2->B,3->C,4->D,5->E,6->F,7->G,8->H"
