@@ -1,0 +1,34 @@
+File List:
+	* app.go - The main app code
+	* input.bson - The input file for the program. Must be provided beforehand
+	* output.bson - Will be generated at runtime. Will be overwritten for each retry/request
+	* screenshots/ - The folder which holds screenshots showing the running of the application
+
+TO RUN:
+	* go run app.go input.bson
+
+Note 1: 
+	* input.bson should only have 1 object. ie, it should be { ... }. 
+	* Code does not support [{ ... } , { ... }]
+	* The example input.json provided by the professor was of this format only.
+
+Note 2: 
+	* 'bson' and the respective import was actually never used in the code as it was unnecessary.
+	* The function prototypes provided by the professor in the Baseline code have been modified.
+
+Note 3:
+	* I have not been able to test for a scenario where request succeeds after failing a few times (It happens really fast). But the implimention exists.
+
+URL to test Status codes:
+	* http://httpstat.us/504
+	* http://httpstat.us/200
+	* http://httpstat.us/404
+
+Flow:
+	* Take request from input.bson (Only 1 request as per format provided by professor in github)
+	* Dpending upon response decide to stop or retry.
+	* Retry for the allowed number of times.
+	* If max retry reached, FAILED
+
+Output file: 
+	* output.bson
