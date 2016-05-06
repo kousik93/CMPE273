@@ -4,7 +4,7 @@
     "max_retries": 3,
     "callback_webhook_url": "http://requestb.in/vh61ztvh",
     "request": {
-        "url": "http://requestb.in/vh61ztvh",
+        "url": "http://httpstat.us/504",
         "method": "POST",
         "http_headers" : {
             "Content-Type": "application/json",
