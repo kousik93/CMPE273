@@ -4,6 +4,18 @@ File List:
 	* output.bson - Will be generated at runtime. Will be overwritten for each retry/request
 	* screenshots/ - The folder which holds screenshots showing the running of the application
 
+Function List:
+	* main() - The main function
+	* task() - The function called every few seconds
+	* makeTimestamp() - The function used to get the timestamp to update Id before write
+	* writeFile() - Helper function used to write out the json to the output
+	* doInitialRequest() - The function that reads from input.bson and does the initial request
+	* doRetry() - After writing to output.bson, this function retries all failed requests in output.bson if they exist
+
+Function Not used from Base code:
+	* readFile() - Implimented in respective functions
+	* createBSON() - Implimented in respective functions
+
 TO RUN:
 	* go run app.go input.bson
 
